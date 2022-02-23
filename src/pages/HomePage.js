@@ -33,7 +33,7 @@ const RouteWithLoader = ({ component: Component, ...rest }) => {
   );
 };
 
-const RouteWithSidebar = ({ component: Component, ...rest }) => {
+const RouteWithSidebar = ({ component: Component, user, ...rest }) => {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -56,10 +56,10 @@ const RouteWithSidebar = ({ component: Component, ...rest }) => {
     <Route {...rest} render={props => (
       <>
         <Preloader show={loaded ? false : true} />
-        <Sidebar />
+        <Sidebar user={user} />
 
         <main className="content">
-          <Navbar />
+          <Navbar user={user} />
           <Component {...props} />
           <Footer toggleSettings={toggleSettings} showSettings={showSettings} />
         </main>
@@ -79,7 +79,8 @@ export default class HomePage extends React.Component {
     socket.on('connect', async () => {
       let user = null;
       try {
-        user = await client.reAuthenticate();
+        const res = await client.reAuthenticate();
+        user = res.user;
       } catch (e) { };
       this.setState({ ready: true, error: false, user });
     });
@@ -89,10 +90,10 @@ export default class HomePage extends React.Component {
   }
   async login(username, password) {
     try {
-      const user = await client.authenticate({
+      const res = await client.authenticate({
         username, password, strategy: 'local'
       });
-      this.setState({ user });
+      this.setState({ user: res.user });
     } catch (e) {
       alert(e.message);
     }
@@ -113,8 +114,12 @@ export default class HomePage extends React.Component {
       ) : (
         user ? (
           <Switch>
-            <RouteWithSidebar exact path={'/'} component={DashboardOverview} />
-            <Redirect to={'/'} />
+            <RouteWithSidebar exact path={'/dashboard'} user={user} component={(e) => (
+              <Switch>
+                <Route exact path={`${e.match.path}/`} render={(er) => <DashboardOverview {...er} {...e} user={user} notify={this.notify} client={client} />} />
+              </Switch>
+            )} />
+            <Redirect to={'/dashboard'} />
           </Switch >
         ) : (
           <Switch>

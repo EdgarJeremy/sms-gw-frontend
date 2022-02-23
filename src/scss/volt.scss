@@ -59,3 +59,10 @@
     transform: rotate(360deg);
   }
 }
+
+.dropdown-menu {
+  display: none !important;
+}
+.dropdown-menu.show {
+  display: block !important;
+}
